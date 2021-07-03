@@ -1,3 +1,6 @@
+/* External libraries */
+#include <DebugLog.h>
+
 /* Local libraries */
 #include "CommandHandling.hpp"
 #include "MotorController.hpp"
@@ -6,35 +9,96 @@
 static AllowedCommands allowedCommands[NUM_COMMAND_SPECIFIERS - 1]; // First value is 'Invalid'
 
 /* Static function declarations */
-static String splitStringWithSeparator(String data, char separator, int index);
+static Command parseCommand(String commandString, char separator, int index);
+static boolean runCommand(const int commandSpecifier, const Command *const command);
+static boolean checkCommandSpecifier(const int commandSpecifier);
 
 /* Static function definitions */
-static String splitStringWithSeparator(String data, char separator, int index)
+static Command parseCommand(String commandString, char separator)
 {
-  int found = 0;
-  int strIndex[] = {0, -1};
-  int maxIndex = data.length() - 1;
+    Command command;
+    command.size = 0;
+    int index = 0;
+    boolean colonFound = false;
 
-  for(int i = 0; i <= maxIndex && found <= index; i++){
-    if(data.charAt(i) == separator || i == maxIndex){
-        found++;
-        strIndex[0] = strIndex[1] + 1;
-        strIndex[1] = (i == maxIndex) ? i + 1 : i;
+    for (int i = 0; i < commandString.length(); i++)
+    {
+        if (!colonFound)
+        {
+            colonFound = (commandString[i] == ':') ? true : false;
+        }
+        else
+        {
+            if (commandString[i] == separator)
+            {
+                index += 1;
+                command.size += 1;
+                continue;
+            }
+            else
+            {
+                command.size += (command.size == 0) ? 1 : 0;
+                command.command[index] += commandString[i];
+            }
+        }
     }
-  }
 
-  return found>index ? data.substring(strIndex[0], strIndex[1]) : "";
+    return command;
+}
+
+static boolean runCommand(const int commandSpecifier, const Command *const commandArray)
+{
+    boolean commandFound = false;
+    const String commandName = commandArray->command[0];
+    AllowedCommands *const commands = &allowedCommands[commandSpecifier];
+
+    for(int i = 0; i < commands->numCommands; i++)
+    {
+        CommandFunction *const commandFunction = &commands->commands[i];
+        if (commandName == commandFunction->commandName)
+        {
+            LOG_VERBOSE("Found command to run.");
+            commandFound = true;
+            commandFunction->callbackFunction(commandArray);
+            break;
+        }
+    }
+
+    return commandFound;
+}
+
+static boolean checkCommandSpecifier(const int commandSpecifier)
+{
+    boolean validSpecifier = false;
+
+    // This value should always be equal to the number of options in the 'else if' statement below
+    const int numCommandSpecifiers = 3;
+
+    if (numCommandSpecifiers + 1 != NUM_COMMAND_SPECIFIERS)
+    {
+        LOG_ERROR("Number of command specifiers is not correct, commands will not work.");
+    }
+    else if (commandSpecifier == MOTOR_CONTROLLER ||
+             commandSpecifier == ACCELEROMETER ||
+             commandSpecifier == COMMAND_HANDLING)
+    {
+        LOG_VERBOSE("Specifier is valid.");
+        validSpecifier = true;
+    }
+
+    return validSpecifier;
 }
 
 /* Funcion definitions */
-void setupCommandHandler(void)
+void setupCommandHandler(const DebugLogLevel debugLogLevel)
 {
-    Serial.begin(9600);
+    // Setup debug level
+    LOG_SET_LEVEL(debugLogLevel);
 
     /* Setup allowed commands */
-    allowedCommands[MOTOR_CONTROLLER].commands[0] = "K";
-    allowedCommands[MOTOR_CONTROLLER].commands[1] = "Ti";
-    allowedCommands[MOTOR_CONTROLLER].commands[2] = "Td";
+    allowedCommands[MOTOR_CONTROLLER].commands[0] = {"K", &setControllerParameter_K};
+    allowedCommands[MOTOR_CONTROLLER].commands[1] = {"Ti", &setControllerParameter_Ti};
+    allowedCommands[MOTOR_CONTROLLER].commands[2] = {"Td", &setControllerParameter_Td};
     allowedCommands[MOTOR_CONTROLLER].numCommands = 3;
 
     allowedCommands[ACCELEROMETER].numCommands = 0;
@@ -43,23 +107,40 @@ void setupCommandHandler(void)
 
 String parseCommandLine(void)
 {
+    /*
+     * This is a very basic and ugly way to parse commands from the serial interface.
+     * Commands should be on the form '<specifier>:<command>,<optional parameters>'
+     */
+
     String string = Serial.readStringUntil('\n');
+    LOG_VERBOSE("Command received: ");
+    LOG_VERBOSE(string);
 
-    if (string.length() > 0)
-    {   
-        const float cmdSpecifier = string.substring(0).toFloat();
+    /* The shortest allowed command is two characters long, e.g. 'commandSpecifier:' */
+    if (string.length() > 1)
+    {
+        const int commandSpecifier = string.substring(0).toInt();
+        LOG_VERBOSE("Parse command...");
+        const Command command = parseCommand(string.substring(1, string.length() - 1), ',');
+        LOG_VERBOSE("Check command specifier...");
+        const boolean validCommandSpecifier = checkCommandSpecifier(commandSpecifier);
 
-        if (cmdSpecifier == MOTOR_CONTROLLER)
+        if (validCommandSpecifier && command.size > 0)
         {
-            
+            LOG_VERBOSE("Run command...");
+            const boolean commandWasRun = runCommand(commandSpecifier, &command);
+            if (!commandWasRun)
+            {
+                LOG_WARNING("Could not run command: ");
+                LOG_WARNING(string);
+            }
+
+            LOG_VERBOSE("Command ran successfully.");
         }
-        else if (cmdSpecifier == ACCELEROMETER)
+        else
         {
-            // Nothing
+            LOG_WARNING("Failed to parse command...");
+            LOG_WARNING("Commands should be on the form '<specifier>:<command>,<optional parameters>'.");
         }
-        else if (cmdSpecifier == COMMAND_HANDLING)
-        {
-            // Nothing
-        }
-    }   
+    }
 }

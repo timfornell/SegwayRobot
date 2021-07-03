@@ -13,20 +13,15 @@ static MMA8452Q accel; // Accelerometer
 /* Function definitions */
 void setupAccelerometer(void)
 {
-    // Setup debug level
-    LOG_SET_LEVEL(DebugLogLevel::ERRORS); // only ERROR log is printed
-    // LOG_SET_LEVEL(DebugLogLevel::WARNINGS); // ERROR and WARNING is printed
-    // LOG_SET_LEVEL(DebugLogLevel::VERBOSE); // all log is printed
-
     accel.init(SCALE_2G);
 
-    LOG_VERBOSE("Accelerometer.ino setup finished.");
+    LOG_VERBOSE("Accelerometer setup finished.");
 }
 
 AccelerometerData getAccelerometerData(void)
 {
     AccelerometerData accData;
-    
+
     accel.read();
     accData.ax = accel.cx;
     accData.ay = accel.cy;

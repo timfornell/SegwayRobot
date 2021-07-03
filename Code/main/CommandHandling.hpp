@@ -5,11 +5,26 @@
 #include <Arduino.h>
 
 /* Definitions */
-#define MAXIMUM_ALLOWED_COMMANDS (100)
+#define MAXIMUM_ALLOWED_COMMANDS (5)
+#define MAXIMUM_COMMAND_SIZE (20)
+
+struct Command
+{
+    String command[MAXIMUM_COMMAND_SIZE];
+    int size;
+};
+
+typedef void (*CommandFunctionCallback)(const Command *const parameters);
+
+struct CommandFunction
+{
+    String commandName;
+    CommandFunctionCallback callbackFunction;
+};
 
 enum CommandSpecifiers
 {
-    /* Needed due to 'toFloat' return 0 upon failure' */
+    /* Needed due to 'toInt' return 0 upon failure' */
     INVALID_SPECIFIER = 0,
     MOTOR_CONTROLLER,
     ACCELEROMETER,
@@ -19,11 +34,12 @@ enum CommandSpecifiers
 
 struct AllowedCommands
 {
-    String commands[MAXIMUM_ALLOWED_COMMANDS];
+    CommandFunction commands[MAXIMUM_ALLOWED_COMMANDS];
     int numCommands;
 };
 
 /* Function declarations */
+void setupCommandHandler(const DebugLogLevel debugLogLevel);
 String parseCommandLine();
 
 #endif

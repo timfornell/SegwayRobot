@@ -5,6 +5,7 @@
 
 /* Local libraries */
 #include "Accelerometer.hpp"
+#include "CommandHandling.hpp"
 
 /* Definitions */
 #define BUFFER_SIZE (5)
@@ -26,5 +27,8 @@ struct ControllerValues
 
 void setupMotorController(void);
 void motorController(const float referenceValue, const AccelerometerData accData);
+void setControllerParameter_K(const Command *const parameters);
+void setControllerParameter_Ti(const Command *const parameters);
+void setControllerParameter_Td(const Command *const parameters);
 
 #endif
