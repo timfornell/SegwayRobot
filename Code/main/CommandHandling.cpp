@@ -19,13 +19,13 @@ static Command parseCommand(String commandString, char separator)
     Command command;
     command.size = 0;
     int index = 0;
-    boolean colonFound = false;
+    boolean commandStartFound = false;
 
     for (int i = 0; i < commandString.length(); i++)
     {
-        if (!colonFound)
+        if (!commandStartFound)
         {
-            colonFound = (commandString[i] == ':') ? true : false;
+            commandStartFound = (commandString[i] == ':') ? true : false;
         }
         else
         {
@@ -93,7 +93,7 @@ static boolean checkCommandSpecifier(const int commandSpecifier)
 void setupCommandHandler(const DebugLogLevel debugLogLevel)
 {
     // Setup debug level
-    LOG_SET_LEVEL(debugLogLevel);
+    LOG_SET_LEVEL(DebugLogLevel::VERBOSE);
 
     /* Setup allowed commands */
     allowedCommands[MOTOR_CONTROLLER].commands[0] = {"K", &setControllerParameter_K};
