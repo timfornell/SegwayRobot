@@ -43,9 +43,9 @@ static void addNewValueToAccelBuffer(const float value)
 /* Function definitions */
 void setupMotorController(void)
 {
-    pidValues.K = 5e1;
-    pidValues.Ti = 1e-5; // Lower exponent => Bigger changes
-    pidValues.Td = 1e-5; 
+    pidValues.K = 5e2;
+    pidValues.Ti = 1e-3; // Lower exponent => Bigger changes
+    pidValues.Td = 1e-4; 
     previousTimeInstance.integralValue = 0;
     previousTimeInstance.previousError = 0;
 
@@ -99,32 +99,60 @@ void motorController(const float referenceValue, const AccelerometerData accData
 void setControllerParameter_K(const String commandParameters[], const int numParameters)
 {
     Serial.println("K parameter");
-    for (int i = 0; i < numParameters; i++)
+    Serial.println("Setting K to first parameter...");
+    if (numParameters > 0)
     {
-        Serial.print(i);
-        Serial.print(": ");
-        Serial.println(commandParameters[i]);
+        const float new_K = commandParameters[0].toFloat();
+        Serial.print("New K: ");
+        Serial.println(new_K);
+        Serial.print("old K: ");
+        Serial.println(pidValues.K);
+        pidValues.K = new_K;
     }
 }
 
 void setControllerParameter_Ti(const String commandParameters[], const int numParameters)
 {
     Serial.println("Ti parameter");
-    for (int i = 0; i < numParameters; i++)
+    Serial.println("Setting Ti to first parameter...");
+    if (numParameters > 0)
     {
-        Serial.print(i);
-        Serial.print(": ");
-        Serial.println(commandParameters[i]);
+        const float new_Ti = commandParameters[0].toFloat();
+        Serial.print("New Ti: ");
+        Serial.println(new_Ti);
+        Serial.print("old Ti: ");
+        Serial.println(pidValues.Ti);
+        pidValues.Ti = new_Ti;
     }
 }
 
 void setControllerParameter_Td(const String commandParameters[], const int numParameters)
 {
     Serial.println("Td parameter");
-    for (int i = 0; i < numParameters; i++)
+    Serial.println("Setting Td to first parameter...");
+    if (numParameters > 0)
     {
-        Serial.print(i);
-        Serial.print(": ");
-        Serial.println(commandParameters[i]);
+        const float new_Td = commandParameters[0].toFloat();
+        Serial.print("New Td: ");
+        Serial.println(new_Td);
+        Serial.print("old Td: ");
+        Serial.println(pidValues.Td);
+        pidValues.Td = new_Td;
     }
+}
+
+void resetIntergralPart(const String commandParameters[], const int numParameters)
+{
+    Serial.println("Reset Integral part");
+    previousTimeInstance.integralValue = 0;
+}
+
+void printPidValues(const String commandParameters[], const int numParameters)
+{
+    Serial.print("K: ");
+    Serial.printn(pidValues.K);
+    Serial.print("Ti: ");
+    Serial.printn(pidValues.Ti);
+    Serial.print("Td: ");
+    Serial.printn(pidValues.Td);
 }

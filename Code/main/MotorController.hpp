@@ -30,5 +30,7 @@ void motorController(const float referenceValue, const AccelerometerData accData
 void setControllerParameter_K(const String commandParameters[], const int numParameters);
 void setControllerParameter_Ti(const String commandParameters[], const int numParameters);
 void setControllerParameter_Td(const String commandParameters[], const int numParameters);
+void resetIntergralPart(const String commandParameters[], const int numParameters);
+void printPidValues(const String commandParameters[], const int numParameters);
 
 #endif

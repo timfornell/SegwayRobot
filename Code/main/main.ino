@@ -36,10 +36,10 @@ void loop(void)
     AccelerometerData accData;
     const boolean accDataAvailable = getAccelerometerData(accel, accData);
     
-    // if (accDataAvailable)
-    // {
-    //     motorController(0, accData);
-    // }
+    if (accDataAvailable)
+    {
+        motorController(0, accData);
+    }
     
     if(TUNING_MODE && Serial.available())
     {

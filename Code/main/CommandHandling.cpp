@@ -138,7 +138,9 @@ void setupCommandHandler(void)
     allowedCommands[MOTOR_CONTROLLER].commands[0] = {"K", &setControllerParameter_K};
     allowedCommands[MOTOR_CONTROLLER].commands[1] = {"Ti", &setControllerParameter_Ti};
     allowedCommands[MOTOR_CONTROLLER].commands[2] = {"Td", &setControllerParameter_Td};
-    allowedCommands[MOTOR_CONTROLLER].numCommands = 3;
+    allowedCommands[MOTOR_CONTROLLER].commands[3] = {"ResetI", &resetIntergralPart};
+    allowedCommands[MOTOR_CONTROLLER].commands[4] = {"PrintPID", &printPidValues};
+    allowedCommands[MOTOR_CONTROLLER].numCommands = 5;
 
     allowedCommands[ACCELEROMETER].numCommands = 0;
     allowedCommands[COMMAND_HANDLING].numCommands = 0;
