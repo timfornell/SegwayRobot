@@ -8,7 +8,7 @@
 #include "CommandHandling.hpp"
 
 /* Definitions */
-#define BUFFER_SIZE (5)
+#define BUFFER_SIZE (10)
 #define ERROR_BUFFER_SIZE (1)
 #define dT (11e-6) // 10 microseconds
 

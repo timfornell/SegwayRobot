@@ -38,7 +38,8 @@ void loop(void)
     
     if (accDataAvailable)
     {
-        motorController(0, accData);
+        // The actual reference value is probably not 0 since the acceleromter isn't exactly horisontal
+        motorController(21, accData);
     }
     
     if(TUNING_MODE && Serial.available())

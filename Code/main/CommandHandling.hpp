@@ -5,7 +5,7 @@
 #include <Arduino.h>
 
 /* Definitions */
-#define MAXIMUM_ALLOWED_COMMANDS (3)
+#define MAXIMUM_ALLOWED_COMMANDS (5)
 #define MAXIMUM_COMMAND_SIZE (20)
 
 typedef void (*CommandFunctionCallback)(const String commandParameters[], const int numParameters);

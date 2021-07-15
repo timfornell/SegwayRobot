@@ -30,48 +30,43 @@ static boolean getCommandNameAndParameters(const String commandParameters, Comma
         Serial.println(command.commandName);
         
         const String parameters = commandParameters.substring(commaIndex + 1);
-        Serial.print("Parameters: ");
-        Serial.println(parameters);
         
-        // Reset commaIndex
-        commaIndex = 0;
-        while (commaIndex > -1)
+        if (commaIndex > -1)
         {
-            const String substring = parameters.substring(commaIndex);
-            Serial.print("Searching string: ");
-            Serial.println(substring);
-
-            const int nextComma = substring.indexOf(',');
-            Serial.print("Previous comma: ");
-            Serial.println(commaIndex);
-            Serial.print("Next comma: ");
-            Serial.println(nextComma);
-
-            if (nextComma > 0)
+            // Reset commaIndex
+            commaIndex = 0;
+            while (commaIndex > -1)
             {
-                const String parameter = substring.substring(0, nextComma );
-                Serial.print("Found parameter: ");
-                Serial.println(parameter);
+                const String substring = parameters.substring(commaIndex);
+                const int nextComma = substring.indexOf(',');
 
-                command.commandParameters[command.numParameters] = parameter;
-                command.numParameters += 1;
-                commaIndex += nextComma + 1;
-            }
-            else
-            {
-                // The string won't end with a comma
-                if (substring.length() > 0)
+                if (nextComma > 0)
                 {
-                    Serial.print("Adding last parameter: ");
-                    Serial.println(substring);
-                    command.commandParameters[command.numParameters] = substring;
-                    command.numParameters += 1;
-                }
+                    const String parameter = substring.substring(0, nextComma );
+                    Serial.print("Found parameter: ");
+                    Serial.println(parameter);
 
-                break;
+                    command.commandParameters[command.numParameters] = parameter;
+                    command.numParameters += 1;
+                    commaIndex += nextComma + 1;
+                }
+                else
+                {
+                    // The string won't end with a comma
+                    if (substring.length() > 0)
+                    {
+                        Serial.print("Adding last parameter: ");
+                        Serial.println(substring);
+                        command.commandParameters[command.numParameters] = substring;
+                        command.numParameters += 1;
+                    }
+
+                    break;
+                }
             }
-        }
         
+        }
+
         successfullyParsedCommand = true;
     }
     else
@@ -96,6 +91,7 @@ static boolean runCommand(const int commandSpecifier, const String commandParame
         for(int i = 0; i < commands->numCommands; i++)
         {
             CommandFunction *const commandFunction = &commands->commands[i];
+
             if (command.commandName == commandFunction->commandName)
             {
                 Serial.println("Found command to run.");

@@ -9,43 +9,43 @@
 /* Static variables */
 static RedBotMotors motors;
 static float accArray[BUFFER_SIZE];
-Vector<float> accelBuffer(accArray);
+Vector<float> angleBuffer(accArray);
 
 static ControllerValues pidValues;
 static ControllerSavedValues previousTimeInstance;
 
 /* Static function declarations */
 static float simpleMovingAverage();
-static void addNewValueToAccelBuffer(const float value);
+static void addNewValueToAngleBuffer(const float value);
 
 /* Static function definitions */
 static float simpleMovingAverage()
 {
     float sum = 0;
-    for (int i = 0; i < accelBuffer.size(); i++)
+    for (int i = 0; i < angleBuffer.size(); i++)
     {
-        sum += accelBuffer[i];
+        sum += angleBuffer[i];
     }
 
-    return sum / accelBuffer.size();
+    return sum / angleBuffer.size();
 }
 
-static void addNewValueToAccelBuffer(const float value)
+static void addNewValueToAngleBuffer(const float value)
 {
-    if (accelBuffer.size() == accelBuffer.max_size())
+    if (angleBuffer.size() == angleBuffer.max_size())
     {
-        accelBuffer.remove(0);
+        angleBuffer.remove(0);
     }
 
-    accelBuffer.push_back(value);
+    angleBuffer.push_back(value);
 }
 
 /* Function definitions */
 void setupMotorController(void)
 {
-    pidValues.K = 5e2;
-    pidValues.Ti = 1e-3; // Lower exponent => Bigger changes
-    pidValues.Td = 1e-4; 
+    pidValues.K = 5e0;
+    pidValues.Ti = 1e6; // Lower exponent => Bigger changes
+    pidValues.Td = 1e-6; 
     previousTimeInstance.integralValue = 0;
     previousTimeInstance.previousError = 0;
 
@@ -54,46 +54,57 @@ void setupMotorController(void)
 
 void motorController(const float referenceValue, const AccelerometerData accData)
 {
-    const float measuredValue = accData.ax;
-    addNewValueToAccelBuffer(measuredValue);
-    const float smoothedValue = simpleMovingAverage();
-    const float previousError = previousTimeInstance.previousError;
-    const float currentError = referenceValue - smoothedValue;
+    // The angle estimation should be replaced by a Kalman filter
+    const float angle = 180 * atan2(accData.ax, accData.az) / PI;
+    addNewValueToAngleBuffer(angle);
+    const float smoothedAngle = simpleMovingAverage();
 
-    /*
-     * Controller is on the following form:
-     *    I_k = I_{k-1} + e_k * (K * dT / T_i)
-     *    v_k = K * e_k + I_k + (e_k - e_{k-1}) * (K * T_d / dT)
-     *    u_k = constrain(v_k, -255, 255)
-     */
-
-    const float I_previous = previousTimeInstance.integralValue;
-    const float deltaError = currentError - previousError;
-    const float P_current = pidValues.K * currentError;
-    float I_current = I_previous + currentError * (pidValues.K * dT / pidValues.Ti);
-    const float D_current = deltaError * (pidValues.K * pidValues.Td / dT);
-    float controlSignal = P_current + I_current + D_current;
-
-    if (abs(controlSignal) > 255)
+    if (abs(smoothedAngle) <= 80)
     {
-        I_current = I_previous; // Only done so that correct value is used in next iteration
-        controlSignal = P_current + I_previous + D_current;
+        const float previousError = previousTimeInstance.previousError;
+        const float currentError = referenceValue - smoothedAngle;
+
+        /*
+        * Controller is on the following form:
+        *    I_k = I_{k-1} + e_k * (K * dT / T_i)
+        *    v_k = K * e_k + I_k + (e_k - e_{k-1}) * (K * T_d / dT)
+        *    u_k = constrain(v_k, -255, 255)
+        */
+
+        const float I_previous = previousTimeInstance.integralValue;
+        const float deltaError = currentError - previousError;
+        const float P_current = pidValues.K * currentError;
+        float I_current = I_previous + currentError * (pidValues.K * dT / pidValues.Ti);
+        const float D_current = deltaError * (pidValues.K * pidValues.Td / dT);
+        float controlSignal = P_current + I_current + D_current;
+
+        if (abs(controlSignal) > 255)
+        {
+            I_current = I_previous; // Only done so that correct value is used in next iteration
+            controlSignal = P_current + I_previous + D_current;
+        }
+
+        const float constrainedControlSignal = constrain(controlSignal, -255, 255);
+
+        // Serial.print("Angle: "); Serial.print(angle); Serial.print(", ");
+        Serial.print("Angle smooth: "); Serial.print(smoothedAngle); Serial.print(", ");
+        Serial.print("P: "); Serial.print(P_current); Serial.print(", ");
+        Serial.print("I: "); Serial.print(I_current); Serial.print(", ");
+        Serial.print("D: "); Serial.print(D_current); Serial.print(", ");
+        // Serial.print("u: "); Serial.print(constrainedControlSignal); 
+        Serial.println();
+
+        motors.leftMotor(- constrainedControlSignal);
+        motors.rightMotor(constrainedControlSignal);
+
+        previousTimeInstance.previousError = currentError;
+        previousTimeInstance.integralValue = I_current;
     }
-
-    const float constrainedControlSignal = constrain(controlSignal, -255, 255);
-
-    Serial.print("smooth: "); Serial.print(smoothedValue); Serial.print(", ");
-    Serial.print("P: "); Serial.print(P_current); Serial.print(", ");
-    Serial.print("I: "); Serial.print(I_current); Serial.print(", ");
-    Serial.print("D: "); Serial.print(D_current); Serial.print(", ");
-    Serial.print("v: "); Serial.print(controlSignal); Serial.print(", ");
-    Serial.print("u: "); Serial.print(constrainedControlSignal); Serial.println();
-
-    motors.leftMotor(- constrainedControlSignal);
-    motors.rightMotor(constrainedControlSignal);
-
-    previousTimeInstance.previousError = currentError;
-    previousTimeInstance.integralValue = I_current;
+    else
+    {
+        motors.leftMotor(0);
+        motors.rightMotor(0);
+    }
 }
 
 void setControllerParameter_K(const String commandParameters[], const int numParameters)
@@ -150,9 +161,9 @@ void resetIntergralPart(const String commandParameters[], const int numParameter
 void printPidValues(const String commandParameters[], const int numParameters)
 {
     Serial.print("K: ");
-    Serial.printn(pidValues.K);
+    Serial.println(pidValues.K);
     Serial.print("Ti: ");
-    Serial.printn(pidValues.Ti);
+    Serial.println(pidValues.Ti);
     Serial.print("Td: ");
-    Serial.printn(pidValues.Td);
+    Serial.println(pidValues.Td);
 }
