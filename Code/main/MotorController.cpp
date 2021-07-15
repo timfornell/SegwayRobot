@@ -1,7 +1,5 @@
 /* External libraries */
 #include <RedBot.h>
-#include <DebugLog.h>
-#include <Arduino.h>
 #include <Vector.h>
 
 /* Local libraries */
@@ -45,13 +43,13 @@ static void addNewValueToAccelBuffer(const float value)
 /* Function definitions */
 void setupMotorController(void)
 {
-    pidValues.K = 1e1;
-    pidValues.Ti = 1e-2;
-    pidValues.Td = 1e0;
+    pidValues.K = 5e1;
+    pidValues.Ti = 1e-5; // Lower exponent => Bigger changes
+    pidValues.Td = 1e-5; 
     previousTimeInstance.integralValue = 0;
     previousTimeInstance.previousError = 0;
 
-    LOG_VERBOSE("MotorController setup finished.");
+    Serial.println("MotorController setup finished.");
 }
 
 void motorController(const float referenceValue, const AccelerometerData accData)
@@ -70,23 +68,26 @@ void motorController(const float referenceValue, const AccelerometerData accData
      */
 
     const float I_previous = previousTimeInstance.integralValue;
-    float I_current = I_previous + currentError * (pidValues.K * dT / pidValues.Ti);
     const float deltaError = currentError - previousError;
-    float controlSignal = pidValues.K * currentError + I_current + deltaError * (pidValues.K * pidValues.Td / dT);
+    const float P_current = pidValues.K * currentError;
+    float I_current = I_previous + currentError * (pidValues.K * dT / pidValues.Ti);
+    const float D_current = deltaError * (pidValues.K * pidValues.Td / dT);
+    float controlSignal = P_current + I_current + D_current;
 
     if (abs(controlSignal) > 255)
     {
-        I_current = I_previous;
-        controlSignal = pidValues.K * currentError + I_current + deltaError * (pidValues.K * pidValues.Td / dT);
+        I_current = I_previous; // Only done so that correct value is used in next iteration
+        controlSignal = P_current + I_previous + D_current;
     }
 
     const float constrainedControlSignal = constrain(controlSignal, -255, 255);
 
-    // Serial.print("smooth: "); Serial.print(smoothedValue); Serial.print(", ");
-    // Serial.print("e: "); Serial.print(currentError); Serial.print(", ");
-    // Serial.print("I: "); Serial.print(I_current); Serial.print(", ");
-    // Serial.print("v: "); Serial.print(controlSignal); Serial.print(", ");
-    // Serial.print("u: "); Serial.print(constrainedControlSignal); Serial.println();
+    Serial.print("smooth: "); Serial.print(smoothedValue); Serial.print(", ");
+    Serial.print("P: "); Serial.print(P_current); Serial.print(", ");
+    Serial.print("I: "); Serial.print(I_current); Serial.print(", ");
+    Serial.print("D: "); Serial.print(D_current); Serial.print(", ");
+    Serial.print("v: "); Serial.print(controlSignal); Serial.print(", ");
+    Serial.print("u: "); Serial.print(constrainedControlSignal); Serial.println();
 
     motors.leftMotor(- constrainedControlSignal);
     motors.rightMotor(constrainedControlSignal);
@@ -95,17 +96,35 @@ void motorController(const float referenceValue, const AccelerometerData accData
     previousTimeInstance.integralValue = I_current;
 }
 
-void setControllerParameter_K(const Command *const parameters)
+void setControllerParameter_K(const String commandParameters[], const int numParameters)
 {
     Serial.println("K parameter");
+    for (int i = 0; i < numParameters; i++)
+    {
+        Serial.print(i);
+        Serial.print(": ");
+        Serial.println(commandParameters[i]);
+    }
 }
 
-void setControllerParameter_Ti(const Command *const parameters)
+void setControllerParameter_Ti(const String commandParameters[], const int numParameters)
 {
     Serial.println("Ti parameter");
+    for (int i = 0; i < numParameters; i++)
+    {
+        Serial.print(i);
+        Serial.print(": ");
+        Serial.println(commandParameters[i]);
+    }
 }
 
-void setControllerParameter_Td(const Command *const parameters)
+void setControllerParameter_Td(const String commandParameters[], const int numParameters)
 {
     Serial.println("Td parameter");
+    for (int i = 0; i < numParameters; i++)
+    {
+        Serial.print(i);
+        Serial.print(": ");
+        Serial.println(commandParameters[i]);
+    }
 }

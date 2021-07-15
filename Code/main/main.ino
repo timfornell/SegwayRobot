@@ -1,38 +1,52 @@
 /* External libraries */
-#include <DebugLog.h>
+#include <Arduino.h>
+#include <Wire.h> // Must include Wire library for I2C
+#include <SparkFun_MMA8452Q.h> // Includes the SFE_MMA8452Q library
 
 /* Local libraries */
 #include "MotorController.hpp"
-#include "Accelerometer.hpp"
 #include "CommandHandling.hpp"
 
+static boolean TUNING_MODE = true;
 
+/* External libraries */
+
+/* Local libraries */
+
+/* Static variables */
+static MMA8452Q accel; // Accelerometer
+
+/* Function definitions */
 void setup(void)
 {
-    // Setup debug level
-    const DebugLogLevel debugLogLevel = DebugLogLevel::VERBOSE;
-    // LOG_SET_LEVEL(DebugLogLevel::ERRORS); // only ERROR log is printed
-    // LOG_SET_LEVEL(DebugLogLevel::WARNINGS); // ERROR and WARNING is printed
-    // LOG_SET_LEVEL(DebugLogLevel::VERBOSE); // all log is printed
-    LOG_SET_LEVEL(debugLogLevel);
-
-    LOG_VERBOSE("Main starting...");
     Serial.begin(9600);
-    setupAccelerometer();
+
+    /* Accelerometer */
+    Wire.begin();
+    accel.init(SCALE_2G);
+
+    Serial.println("Main starting...");
     setupMotorController();
-    setupCommandHandler(debugLogLevel);
-    LOG_VERBOSE("Main setup finished!");
+    setupCommandHandler();
+    Serial.println("Main setup finished!");
 }
 
 void loop(void)
 {
-    const AccelerometerData accData = getAccelerometerData();
-    motorController(0, accData);
-
-    if(Serial.available())
+    AccelerometerData accData;
+    const boolean accDataAvailable = getAccelerometerData(accel, accData);
+    
+    // if (accDataAvailable)
+    // {
+    //     motorController(0, accData);
+    // }
+    
+    if(TUNING_MODE && Serial.available())
     {
-        LOG_VERBOSE("Data received.");
-        parseCommandLine();
-        LOG_VERBOSE("Parsing complete.");
+        String string = Serial.readStringUntil('\n');
+        Serial.print("Data received: ");
+        Serial.println(string);
+        parseCommandLine(string);
+        Serial.println("Parsing complete.");
     }
 }

@@ -5,16 +5,17 @@
 #include <Arduino.h>
 
 /* Definitions */
-#define MAXIMUM_ALLOWED_COMMANDS (5)
+#define MAXIMUM_ALLOWED_COMMANDS (3)
 #define MAXIMUM_COMMAND_SIZE (20)
+
+typedef void (*CommandFunctionCallback)(const String commandParameters[], const int numParameters);
 
 struct Command
 {
-    String command[MAXIMUM_COMMAND_SIZE];
-    int size;
+    int numParameters;
+    String commandParameters[MAXIMUM_COMMAND_SIZE];
+    String commandName;
 };
-
-typedef void (*CommandFunctionCallback)(const Command *const parameters);
 
 struct CommandFunction
 {
@@ -39,7 +40,7 @@ struct AllowedCommands
 };
 
 /* Function declarations */
-void setupCommandHandler(const DebugLogLevel debugLogLevel);
-String parseCommandLine();
+void setupCommandHandler(void);
+void parseCommandLine(String input);
 
 #endif
