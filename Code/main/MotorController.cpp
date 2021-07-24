@@ -5,59 +5,36 @@
 /* Local libraries */
 #include "MotorController.hpp"
 #include "CommandHandling.hpp"
+#include "CommonDefinitions.hpp"
+#include "ekf.hpp"
 
 /* Static variables */
 static RedBotMotors motors;
-static float accArray[BUFFER_SIZE];
-Vector<float> angleBuffer(accArray);
-
 static ControllerValues pidValues;
 static ControllerSavedValues previousTimeInstance;
 
 /* Static function declarations */
-static float simpleMovingAverage();
-static void addNewValueToAngleBuffer(const float value);
-
-/* Static function definitions */
-static float simpleMovingAverage()
-{
-    float sum = 0;
-    for (int i = 0; i < angleBuffer.size(); i++)
-    {
-        sum += angleBuffer[i];
-    }
-
-    return sum / angleBuffer.size();
-}
-
-static void addNewValueToAngleBuffer(const float value)
-{
-    if (angleBuffer.size() == angleBuffer.max_size())
-    {
-        angleBuffer.remove(0);
-    }
-
-    angleBuffer.push_back(value);
-}
 
 /* Function definitions */
 void setupMotorController(void)
 {
-    pidValues.K = 5e0;
-    pidValues.Ti = 1e6; // Lower exponent => Bigger changes
-    pidValues.Td = 1e-6; 
+    pidValues.K = 3.6;
+    pidValues.Ti = 0.262;//0.22;
+    pidValues.Td = 0.0655;//0.0054; 
     previousTimeInstance.integralValue = 0;
     previousTimeInstance.previousError = 0;
-
-    Serial.println("MotorController setup finished.");
 }
 
 void motorController(const float referenceValue, const AccelerometerData accData)
 {
     // The angle estimation should be replaced by a Kalman filter
     const float angle = 180 * atan2(accData.ax, accData.az) / PI;
-    addNewValueToAngleBuffer(angle);
-    const float smoothedAngle = simpleMovingAverage();
+
+    // Serial.print("Angle: "); Serial.print(angle); Serial.print(", ");
+    Serial.print("AngleEKF: "); Serial.print(ekfGetAngle()); Serial.print(", ");
+    Serial.println();
+
+    const float smoothedAngle = ekfGetAngle();
 
     if (abs(smoothedAngle) <= 80)
     {
@@ -87,12 +64,12 @@ void motorController(const float referenceValue, const AccelerometerData accData
         const float constrainedControlSignal = constrain(controlSignal, -255, 255);
 
         // Serial.print("Angle: "); Serial.print(angle); Serial.print(", ");
-        Serial.print("Angle smooth: "); Serial.print(smoothedAngle); Serial.print(", ");
-        Serial.print("P: "); Serial.print(P_current); Serial.print(", ");
-        Serial.print("I: "); Serial.print(I_current); Serial.print(", ");
-        Serial.print("D: "); Serial.print(D_current); Serial.print(", ");
+        // Serial.print("Angle smooth: "); Serial.print(smoothedAngle); Serial.print(", ");
+        // Serial.print("P: "); Serial.print(P_current); Serial.print(", ");
+        // Serial.print("I: "); Serial.print(I_current); Serial.print(", ");
+        // Serial.print("D: "); Serial.print(D_current); Serial.print(", ");
         // Serial.print("u: "); Serial.print(constrainedControlSignal); 
-        Serial.println();
+        // Serial.println();
 
         motors.leftMotor(- constrainedControlSignal);
         motors.rightMotor(constrainedControlSignal);

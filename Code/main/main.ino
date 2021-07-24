@@ -6,15 +6,12 @@
 /* Local libraries */
 #include "MotorController.hpp"
 #include "CommandHandling.hpp"
-
-static boolean TUNING_MODE = true;
-
-/* External libraries */
-
-/* Local libraries */
+#include "ekf.hpp"
 
 /* Static variables */
 static MMA8452Q accel; // Accelerometer
+static const float referenceAngle = 21;
+static boolean TUNING_MODE = true;
 
 /* Function definitions */
 void setup(void)
@@ -25,29 +22,27 @@ void setup(void)
     Wire.begin();
     accel.init(SCALE_2G);
 
-    Serial.println("Main starting...");
+    initializeEkfFilter(referenceAngle);
     setupMotorController();
     setupCommandHandler();
-    Serial.println("Main setup finished!");
 }
 
 void loop(void)
 {
+    ekfTimeUpdate();
+    
     AccelerometerData accData;
     const boolean accDataAvailable = getAccelerometerData(accel, accData);
-    
-    if (accDataAvailable)
-    {
-        // The actual reference value is probably not 0 since the acceleromter isn't exactly horisontal
-        motorController(21, accData);
-    }
     
     if(TUNING_MODE && Serial.available())
     {
         String string = Serial.readStringUntil('\n');
-        Serial.print("Data received: ");
-        Serial.println(string);
         parseCommandLine(string);
         Serial.println("Parsing complete.");
+    }
+    else if (accDataAvailable)
+    {
+        ekfMeasurementUpdate(accData.ax, accData.az);
+        motorController(referenceAngle, accData);
     }
 }

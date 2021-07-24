@@ -3,6 +3,7 @@
 /* Local libraries */
 #include "CommandHandling.hpp"
 #include "MotorController.hpp"
+#include "ekf.hpp"
 
 /* Static variables */
 static AllowedCommands allowedCommands[NUM_COMMAND_SPECIFIERS - 1]; // First value is 'Invalid'
@@ -24,7 +25,11 @@ static boolean getCommandNameAndParameters(const String commandParameters, Comma
     
     if (colonIndex > -1)
     {
-        Serial.print("Colon found. Command name: ");
+        Serial.print("Colon found at index ");
+        Serial.println(colonIndex);
+        Serial.print("Comma found at index ");
+        Serial.println(commaIndex);
+        Serial.print("Command name: ");
         command.commandName = commaIndex > -1 ? commandParameters.substring(colonIndex + 1, commaIndex) : 
                                                 commandParameters.substring(colonIndex + 1, commandParameters.length());
         Serial.println(command.commandName);
@@ -110,17 +115,17 @@ static boolean checkCommandSpecifier(const int commandSpecifier)
     boolean validSpecifier = false;
 
     // This value should always be equal to the number of options in the 'else if' statement below
-    const int numCommandSpecifiers = 3;
+    const int numCommandSpecifiers = 4;
 
     if (numCommandSpecifiers + 1 != static_cast<int>(NUM_COMMAND_SPECIFIERS))
     {
         Serial.println("Number of command specifiers is not correct, commands will not work.");
     }
     else if (commandSpecifier == static_cast<int>(MOTOR_CONTROLLER) ||
+             commandSpecifier == static_cast<int>(EKF_FILTER) ||
              commandSpecifier == static_cast<int>(ACCELEROMETER) ||
              commandSpecifier == static_cast<int>(COMMAND_HANDLING))
     {
-        Serial.println("Specifier is valid.");
         validSpecifier = true;
     }
 
@@ -138,10 +143,12 @@ void setupCommandHandler(void)
     allowedCommands[MOTOR_CONTROLLER].commands[4] = {"PrintPID", &printPidValues};
     allowedCommands[MOTOR_CONTROLLER].numCommands = 5;
 
+    allowedCommands[EKF_FILTER].commands[0] = {"Q", &ekfSetQValue};
+    allowedCommands[EKF_FILTER].commands[1] = {"R", &ekfSetRValue};
+    allowedCommands[EKF_FILTER].numCommands = 2;
+
     allowedCommands[ACCELEROMETER].numCommands = 0;
     allowedCommands[COMMAND_HANDLING].numCommands = 0;
-    
-    Serial.println("CommandHandler setup finished.");
 }
 
 void parseCommandLine(String input)
@@ -152,6 +159,9 @@ void parseCommandLine(String input)
      */
 
     /* The shortest allowed command is two characters long, e.g. 'commandSpecifier:' */
+    Serial.print("Data received: ");
+    Serial.println(input);
+        
     if (input.length() > 1)
     {
         const int commandSpecifier = input.substring(0).toInt();

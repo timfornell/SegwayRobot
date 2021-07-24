@@ -4,9 +4,11 @@
 /* External libraries */
 #include <Arduino.h>
 
+/* Internal libraries */
+
 /* Definitions */
 #define MAXIMUM_ALLOWED_COMMANDS (5)
-#define MAXIMUM_COMMAND_SIZE (20)
+#define MAXIMUM_COMMAND_SIZE (2)
 
 typedef void (*CommandFunctionCallback)(const String commandParameters[], const int numParameters);
 
@@ -25,9 +27,10 @@ struct CommandFunction
 
 enum CommandSpecifiers
 {
-    /* Needed due to 'toInt' return 0 upon failure' */
+    /* Needed due to 'toInt' returning 0 upon failure' */
     INVALID_SPECIFIER = 0,
     MOTOR_CONTROLLER,
+    EKF_FILTER,
     ACCELEROMETER,
     COMMAND_HANDLING,
     NUM_COMMAND_SPECIFIERS
